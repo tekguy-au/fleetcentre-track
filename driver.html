@@ -319,62 +319,39 @@
 <footer id="footerMsg">Location sharing off</footer>
 
 <script>
-// CONFIG — update WS_URL after deploying server
-const WS_URL = window.location.hostname === 'localhost'
-  ? 'ws://localhost:3001'
-  : 'wss://clearpath-cold-server.onrender.com'; // update this
+const API = 'https://n8n.tekguy.au/webhook';
+const TRACK_BASE = window.location.origin + '/track';
 
-const SERVER_URL = WS_URL.replace('wss://', 'https://').replace('ws://', 'http://');
-const TRACK_BASE = window.location.origin + '/track.html';
-
-let ws = null;
 let sessionId = null;
 let watchId = null;
 let updateCount = 0;
 let isLive = false;
+let sendInterval = null;
+let lastPos = null;
 
 async function startDelivery() {
   document.getElementById('startBtn').disabled = true;
   document.getElementById('ringLabel').textContent = 'Starting…';
 
   try {
-    // Create session
-    const res = await fetch(`${SERVER_URL}/session`, { method: 'POST' });
+    const res = await fetch(`${API}/cold-update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'create' })
+    });
     const { id } = await res.json();
     sessionId = id;
 
-    // Show tracking link
-    const trackUrl = `${TRACK_BASE}?id=${id}`;
-    document.getElementById('shareUrl').textContent = trackUrl;
+    document.getElementById('shareUrl').textContent = `${TRACK_BASE}?id=${id}`;
     document.getElementById('shareBox').classList.add('visible');
 
-    // Connect WebSocket as driver
-    connectWS(id);
-
+    setConnected(true);
+    startGPS();
   } catch (e) {
-    alert('Could not start session. Check server connection.');
+    alert('Could not start session.');
     document.getElementById('startBtn').disabled = false;
     document.getElementById('ringLabel').textContent = 'Ready';
   }
-}
-
-function connectWS(id) {
-  ws = new WebSocket(`${WS_URL}?id=${id}&role=driver`);
-
-  ws.onopen = () => {
-    setConnected(true);
-    startGPS();
-  };
-
-  ws.onclose = () => {
-    setConnected(false);
-    if (isLive) {
-      // Auto-reconnect
-      setTimeout(() => connectWS(id), 3000);
-    }
-  };
-
-  ws.onerror = () => setConnected(false);
 }
 
 function startGPS() {
@@ -385,36 +362,44 @@ function startGPS() {
 
   watchId = navigator.geolocation.watchPosition(
     (pos) => {
+      const { latitude: lat, longitude: lng, speed, accuracy, heading } = pos.coords;
+      lastPos = {
+        lat, lng,
+        heading: heading || null,
+        speed: speed ? Math.round(speed * 3.6) : null
+      };
+
+      document.getElementById('statSpeed').textContent = lastPos.speed || '0';
+      document.getElementById('statAccuracy').textContent = accuracy ? `${Math.round(accuracy)}m` : '—';
+
       if (!isLive) {
         isLive = true;
         setLiveState();
-      }
-
-      const { latitude: lat, longitude: lng, speed, accuracy, heading } = pos.coords;
-
-      if (ws?.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'location',
-          lat, lng,
-          heading: heading || null,
-          speed: speed ? Math.round(speed * 3.6) : null // m/s → km/h
-        }));
-        updateCount++;
-        document.getElementById('statUpdates').textContent = updateCount;
-        document.getElementById('statSpeed').textContent = speed ? Math.round(speed * 3.6) : '0';
-        document.getElementById('statAccuracy').textContent = accuracy ? `${Math.round(accuracy)}m` : '—';
-        animateRing();
+        sendLocation();
+        sendInterval = setInterval(sendLocation, 4000);
       }
     },
     (err) => {
       document.getElementById('footerMsg').textContent = `GPS error: ${err.message}`;
     },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
+}
+
+async function sendLocation() {
+  if (!lastPos || !sessionId) return;
+  try {
+    await fetch(`${API}/cold-update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'location', id: sessionId, ...lastPos })
+    });
+    updateCount++;
+    document.getElementById('statUpdates').textContent = updateCount;
+    animateRing();
+  } catch (e) {
+    setConnected(false);
+  }
 }
 
 function setLiveState() {
@@ -446,21 +431,22 @@ function animateRing() {
   clearTimeout(ringTimeout);
   ringTimeout = setTimeout(() => {
     ring.style.stroke = '#1B6CA8';
-    ring.style.strokeDashoffset = '204'; // half
+    ring.style.strokeDashoffset = '204';
   }, 800);
 }
 
-function markDelivered() {
+async function markDelivered() {
   if (!confirm('Mark this delivery as complete?')) return;
 
-  if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'delivered' }));
-  }
+  await fetch(`${API}/cold-update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'delivered', id: sessionId })
+  }).catch(() => {});
 
-  // Stop GPS
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  if (sendInterval) clearInterval(sendInterval);
   isLive = false;
-  ws?.close();
 
   document.getElementById('ringIcon').textContent = '✅';
   document.getElementById('ringLabel').textContent = 'Delivered';
@@ -471,8 +457,6 @@ function markDelivered() {
   document.getElementById('footerMsg').textContent = 'Delivery complete';
   updateCount = 0;
   sessionId = null;
-
-  // Reset start button for new delivery
   document.getElementById('startBtn').onclick = startDelivery;
 }
 
