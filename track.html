@@ -152,8 +152,9 @@ async function poll() {
         position: pos,
         map: map,
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: '#1B6CA8', fillOpacity: 1, strokeColor: '#A8D5EA', strokeWeight: 3, scale: 10,
+          url: '/bloom.svg',
+          scaledSize: new google.maps.Size(48, 48),
+          anchor: new google.maps.Point(24, 24),
         },
       });
       map.panTo(pos);
