@@ -35,8 +35,7 @@ Both `driver.html` and `track.html` as static files.
 - Track URL: `clearpath-cold.vercel.app/track?id=XXX`
 
 ## Google Maps
-- **API Key:** `AIzaSyC1MaPUOfYKWagYghJ0ye0HcpwkJusn-RU`
-- **Restrictions:** Maps JavaScript API + Places API
+- **API Key:** `AIzaSyBpadAI6jvcE_3L_EtjV3IrTRKaOO-D984`
 - **Google Cloud login:** rdpeacock67@gmail.com
 
 ## Test flow
