@@ -177,6 +177,17 @@ const lightStyle = [
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
+const MARKER_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="20" fill="#1B6CA8" stroke="#FFFFFF" stroke-width="3"/>
+    <g stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round">
+      <line x1="24" y1="14" x2="24" y2="34"/>
+      <line x1="15.3" y1="19" x2="32.7" y2="29"/>
+      <line x1="32.7" y1="19" x2="15.3" y2="29"/>
+    </g>
+  </svg>`
+);
+
 function isDaytime() {
   const hour = new Date().getHours();
   return hour >= 6 && hour < 18;
@@ -230,7 +241,7 @@ async function pollFleet() {
           position: pos,
           map: map,
           icon: {
-            url: '/bloom.svg',
+            url: MARKER_ICON,
             scaledSize: new google.maps.Size(40, 40),
             anchor: new google.maps.Point(20, 20),
           },
@@ -290,7 +301,7 @@ async function poll() {
         position: pos,
         map: map,
         icon: {
-          url: '/bloom.svg',
+          url: MARKER_ICON,
           scaledSize: new google.maps.Size(48, 48),
           anchor: new google.maps.Point(24, 24),
         },
