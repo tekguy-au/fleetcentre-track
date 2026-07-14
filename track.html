@@ -188,6 +188,25 @@ const MARKER_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   </svg>`
 );
 
+const PIRATE_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+    <line x1="14" y1="6" x2="14" y2="42" stroke="#5C4A3A" stroke-width="3" stroke-linecap="round"/>
+    <path d="M14 8 L41 16 L14 25 Z" fill="#111111" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+    <g transform="translate(23,16.5)">
+      <circle r="4.2" fill="#FFFFFF"/>
+      <circle cx="-1.6" cy="-1" r="0.9" fill="#111111"/>
+      <circle cx="1.6" cy="-1" r="0.9" fill="#111111"/>
+      <path d="M-1.8 2.2 Q0 3.6 1.8 2.2" stroke="#111111" stroke-width="0.8" fill="none"/>
+      <line x1="-5.5" y1="5" x2="5.5" y2="-3" stroke="#FFFFFF" stroke-width="1.1"/>
+      <line x1="-5.5" y1="-3" x2="5.5" y2="5" stroke="#FFFFFF" stroke-width="1.1"/>
+    </g>
+  </svg>`
+);
+
+function isRuss(name) {
+  return !!name && name.trim().toLowerCase() === 'russ';
+}
+
 function isDaytime() {
   const hour = new Date().getHours();
   return hour >= 6 && hour < 18;
@@ -237,15 +256,14 @@ async function pollFleet() {
       fleetData[s.id] = s;
 
       if (!fleetMarkers[s.id]) {
+        const pirate = isRuss(s.name);
         const m = new google.maps.Marker({
           position: pos,
           map: map,
-          icon: {
-            url: MARKER_ICON,
-            scaledSize: new google.maps.Size(40, 40),
-            anchor: new google.maps.Point(20, 20),
-          },
-          label: { text: s.id.slice(0, 4).toUpperCase(), color: '#FFFFFF', fontSize: '9px', fontWeight: '700' },
+          icon: pirate
+            ? { url: PIRATE_ICON, scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(12, 38) }
+            : { url: MARKER_ICON, scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(20, 20) },
+          label: pirate ? null : { text: s.id.slice(0, 4).toUpperCase(), color: '#FFFFFF', fontSize: '9px', fontWeight: '700' },
         });
         m.addListener('mouseover', () => {
           hoverInfo.setContent(fleetInfoContent(s.id));

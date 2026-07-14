@@ -202,6 +202,21 @@
     gap: 12px;
   }
 
+  .name-input {
+    width: 100%;
+    max-width: 320px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(168,213,234,0.2);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+  }
+  .name-input::placeholder { color: var(--muted); }
+  .name-input:focus { border-color: var(--cold); }
+  .name-input:disabled { opacity: 0.5; }
+
   .btn-primary {
     background: var(--cold);
     color: white;
@@ -327,6 +342,7 @@
   </div>
 
   <div class="actions">
+    <input type="text" class="name-input" id="driverName" placeholder="Your name" maxlength="40">
     <button class="btn-primary" id="startBtn" onclick="startDelivery()">Start delivery</button>
     <button class="btn-danger" id="deliveredBtn" onclick="markDelivered()">Mark as delivered</button>
     <button class="btn-stop" id="stopBtn" onclick="stopDelivery()">Stop</button>
@@ -365,15 +381,22 @@ document.addEventListener('visibilitychange', () => {
   if (isLive && document.visibilityState === 'visible') acquireWakeLock();
 });
 
+const nameInput = document.getElementById('driverName');
+nameInput.value = localStorage.getItem('driverName') || '';
+
 async function startDelivery() {
   document.getElementById('startBtn').disabled = true;
   document.getElementById('ringLabel').textContent = 'Starting…';
+
+  const driverName = nameInput.value.trim();
+  localStorage.setItem('driverName', driverName);
+  nameInput.disabled = true;
 
   try {
     const res = await fetch(`${API}/cold-update`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'create' })
+      body: JSON.stringify({ type: 'create', name: driverName || null })
     });
     const { id } = await res.json();
     sessionId = id;
@@ -387,6 +410,7 @@ async function startDelivery() {
     alert('Could not start session.');
     document.getElementById('startBtn').disabled = false;
     document.getElementById('ringLabel').textContent = 'Ready';
+    nameInput.disabled = false;
   }
 }
 
@@ -497,6 +521,7 @@ async function markDelivered() {
   document.getElementById('footerMsg').textContent = 'Delivery complete';
   updateCount = 0;
   sessionId = null;
+  nameInput.disabled = false;
   document.getElementById('startBtn').onclick = startDelivery;
 }
 
@@ -521,6 +546,7 @@ function stopDelivery() {
   updateCount = 0;
   document.getElementById('statUpdates').textContent = '—';
   sessionId = null;
+  nameInput.disabled = false;
 }
 
 function copyLink() {
