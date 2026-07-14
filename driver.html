@@ -345,6 +345,25 @@ let updateCount = 0;
 let isLive = false;
 let sendInterval = null;
 let lastPos = null;
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch (e) {}
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (isLive && document.visibilityState === 'visible') acquireWakeLock();
+});
 
 async function startDelivery() {
   document.getElementById('startBtn').disabled = true;
@@ -427,6 +446,7 @@ function setLiveState() {
   document.getElementById('deliveredBtn').classList.add('visible');
   document.getElementById('stopBtn').classList.add('visible');
   document.getElementById('footerMsg').textContent = 'Streaming live location';
+  acquireWakeLock();
 }
 
 function setConnected(ok) {
@@ -465,6 +485,7 @@ async function markDelivered() {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   if (sendInterval) clearInterval(sendInterval);
   isLive = false;
+  releaseWakeLock();
 
   document.getElementById('ringIcon').textContent = '✅';
   document.getElementById('ringLabel').textContent = 'Delivered';
@@ -485,6 +506,7 @@ function stopDelivery() {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   if (sendInterval) clearInterval(sendInterval);
   isLive = false;
+  releaseWakeLock();
 
   document.getElementById('ringIcon').textContent = '🚐';
   document.getElementById('ringLabel').textContent = 'Ready';
