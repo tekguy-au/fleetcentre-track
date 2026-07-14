@@ -376,7 +376,7 @@ function startGPS() {
         isLive = true;
         setLiveState();
         sendLocation();
-        sendInterval = setInterval(sendLocation, 4000);
+        sendInterval = setInterval(sendLocation, 45000);
       }
     },
     (err) => {

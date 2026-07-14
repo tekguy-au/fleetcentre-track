@@ -118,7 +118,10 @@ function initMap() {
     disableDefaultUI: true,
     gestureHandling: 'greedy',
   });
-  if (sessionId) pollTimer = setInterval(poll, 2000);
+  if (sessionId) {
+    poll();
+    pollTimer = setInterval(poll, 45000);
+  }
 }
 
 async function poll() {
@@ -179,7 +182,7 @@ async function poll() {
 function smoothMove(marker, target) {
   const start = marker.getPosition().toJSON();
   const startTime = Date.now();
-  const duration = 1500;
+  const duration = 44000;
 
   function step() {
     const t = Math.min((Date.now() - startTime) / duration, 1);
