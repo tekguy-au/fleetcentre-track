@@ -108,14 +108,16 @@
 <script>
 const API = 'https://n8n.tekguy.au/webhook';
 const sessionId = new URLSearchParams(window.location.search).get('id');
+const fleetMode = !sessionId;
 
-if (!sessionId) {
-  document.getElementById('waitingOverlay').innerHTML = '<div class="overlay-title">No tracking ID</div><div class="overlay-sub">This link may be invalid</div>';
+if (fleetMode) {
+  document.getElementById('waitingOverlay').innerHTML = '<div class="overlay-title">Loading fleet…</div><div class="overlay-sub">Fetching active drivers</div>';
 }
 
 let map, marker, pollTimer;
 let currentPos = null;
 let lastUpdateTs = null;
+let fleetMarkers = {};
 
 const darkStyle = [
   { elementType: 'geometry', stylers: [{ color: '#0D1B2A' }] },
@@ -159,10 +161,61 @@ function initMap() {
     disableDefaultUI: true,
     gestureHandling: 'greedy',
   });
-  if (sessionId) {
+  if (fleetMode) {
+    pollFleet();
+    pollTimer = setInterval(pollFleet, 45000);
+  } else {
     poll();
     pollTimer = setInterval(poll, 45000);
   }
+}
+
+async function pollFleet() {
+  try {
+    const res = await fetch(`${API}/cold-list`);
+    const data = await res.json();
+    const sessions = data.sessions || [];
+
+    document.getElementById('waitingOverlay').classList.toggle('hidden', sessions.length > 0);
+    if (sessions.length === 0) {
+      document.getElementById('waitingOverlay').innerHTML = '<div class="overlay-title">No active drivers</div><div class="overlay-sub">Check back shortly</div>';
+    }
+    document.getElementById('statusDot').className = sessions.length ? 'status-dot live' : 'status-dot';
+    document.getElementById('statusText').textContent = sessions.length ? `${sessions.length} active` : 'No drivers';
+
+    const seen = new Set();
+    const bounds = new google.maps.LatLngBounds();
+
+    sessions.forEach(s => {
+      seen.add(s.id);
+      const pos = { lat: s.lat, lng: s.lng };
+      bounds.extend(pos);
+
+      if (!fleetMarkers[s.id]) {
+        fleetMarkers[s.id] = new google.maps.Marker({
+          position: pos,
+          map: map,
+          icon: {
+            url: '/bloom.svg',
+            scaledSize: new google.maps.Size(40, 40),
+            anchor: new google.maps.Point(20, 20),
+          },
+          label: { text: s.id.slice(0, 4).toUpperCase(), color: '#FFFFFF', fontSize: '9px', fontWeight: '700' },
+        });
+      } else {
+        smoothMove(fleetMarkers[s.id], pos);
+      }
+    });
+
+    Object.keys(fleetMarkers).forEach(id => {
+      if (!seen.has(id)) {
+        fleetMarkers[id].setMap(null);
+        delete fleetMarkers[id];
+      }
+    });
+
+    if (sessions.length) map.fitBounds(bounds, 60);
+  } catch (e) {}
 }
 
 async function poll() {

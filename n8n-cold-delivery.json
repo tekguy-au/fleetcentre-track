@@ -1,0 +1,265 @@
+{
+  "name": "ClearPath Cold \u2014 Delivery Tracking",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cold-update",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "update-trigger",
+      "name": "GPS Update",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        272,
+        304
+      ],
+      "webhookId": "cold-update"
+    },
+    {
+      "parameters": {
+        "path": "cold-poll",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "poll-trigger",
+      "name": "Poll Location",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        272,
+        528
+      ],
+      "webhookId": "cold-poll"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ JSON.stringify({ ok: true }) }}",
+        "options": {}
+      },
+      "id": "store-location",
+      "name": "Store Location",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        480,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "update-response",
+      "name": "Update Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "poll-response",
+      "name": "Poll Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        704,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple in-memory store using static data\nconst staticData = $getWorkflowStaticData('global');\n\nconst body = $input.first().json.body;\nconst id = body.id;\n\nif (!staticData.sessions) staticData.sessions = {};\n\nif (body.type === 'create') {\n  const sessionId = Math.random().toString(36).substring(2, 10);\n  staticData.sessions[sessionId] = { lat: null, lng: null, heading: null, speed: null, status: 'preparing', ts: null };\n  return [{ json: { ok: true, id: sessionId } }];\n}\n\nif (body.type === 'location' && id && staticData.sessions[id]) {\n  staticData.sessions[id] = {\n    lat: body.lat,\n    lng: body.lng,\n    heading: body.heading || null,\n    speed: body.speed || null,\n    status: 'active',\n    ts: Date.now()\n  };\n  return [{ json: { ok: true } }];\n}\n\nif (body.type === 'delivered' && id && staticData.sessions[id]) {\n  staticData.sessions[id].status = 'delivered';\n  staticData.sessions[id].ts = Date.now();\n  return [{ json: { ok: true } }];\n}\n\nreturn [{ json: { error: 'invalid request' } }];"
+      },
+      "id": "process-update",
+      "name": "Process Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst id = $input.first().json.query.id;\n\nif (!staticData.sessions || !staticData.sessions[id]) {\n  return [{ json: { error: 'not found' } }];\n}\n\nreturn [{ json: staticData.sessions[id] }];"
+      },
+      "id": "read-location",
+      "name": "Read Location",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "cold-list",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              },
+              {
+                "name": "Access-Control-Allow-Headers",
+                "value": "Content-Type"
+              }
+            ]
+          }
+        }
+      },
+      "id": "list-trigger",
+      "name": "List Sessions",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        260,
+        740
+      ],
+      "webhookId": "cold-list"
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst sessions = staticData.sessions || {};\nconst FRESH_MS = 10 * 60 * 1000;\nconst now = Date.now();\n\nconst list = Object.keys(sessions)\n  .filter(id => sessions[id].status !== 'delivered' && sessions[id].lat !== null && sessions[id].ts && (now - sessions[id].ts) < FRESH_MS)\n  .map(id => ({ id, ...sessions[id] }));\n\nreturn [{ json: { sessions: list } }];"
+      },
+      "id": "read-sessions",
+      "name": "Read Sessions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "list-response",
+      "name": "List Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        740
+      ]
+    }
+  ],
+  "connections": {
+    "GPS Update": {
+      "main": [
+        [
+          {
+            "node": "Process Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Update": {
+      "main": [
+        [
+          {
+            "node": "Update Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Poll Location": {
+      "main": [
+        [
+          {
+            "node": "Read Location",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Location": {
+      "main": [
+        [
+          {
+            "node": "Poll Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Sessions": {
+      "main": [
+        [
+          {
+            "node": "Read Sessions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Sessions": {
+      "main": [
+        [
+          {
+            "node": "List Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": true
+}
