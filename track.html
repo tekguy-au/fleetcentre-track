@@ -207,6 +207,34 @@ function isRuss(name) {
   return !!name && name.trim().toLowerCase() === 'russ';
 }
 
+function buildFlagIcon(color) {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+      <line x1="14" y1="6" x2="14" y2="42" stroke="#5C4A3A" stroke-width="3" stroke-linecap="round"/>
+      <path d="M14 8 L41 16 L14 25 Z" fill="${color}" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+    </svg>`
+  );
+}
+
+const AUTO_FLAG_PALETTE = ['#F1C40F', '#9B59B6', '#1B6CA8', '#FF6B2B', '#16A085', '#E67E22', '#3498DB', '#8E44AD'];
+const fleetColorAssignments = {};
+
+function assignAutoColor(id) {
+  const used = new Set(Object.values(fleetColorAssignments));
+  const available = AUTO_FLAG_PALETTE.filter(c => !used.has(c));
+  const pool = available.length ? available : AUTO_FLAG_PALETTE;
+  const color = pool[Math.floor(Math.random() * pool.length)];
+  fleetColorAssignments[id] = color;
+  return color;
+}
+
+function fleetIcon(s) {
+  if (s.flag === 'red') return buildFlagIcon('#E74C3C');
+  if (s.flag === 'green') return buildFlagIcon('#27AE60');
+  if (isRuss(s.name)) return PIRATE_ICON;
+  return buildFlagIcon(fleetColorAssignments[s.id] || assignAutoColor(s.id));
+}
+
 function isDaytime() {
   const hour = new Date().getHours();
   return hour >= 6 && hour < 18;
@@ -256,14 +284,10 @@ async function pollFleet() {
       fleetData[s.id] = s;
 
       if (!fleetMarkers[s.id]) {
-        const pirate = isRuss(s.name);
         const m = new google.maps.Marker({
           position: pos,
           map: map,
-          icon: pirate
-            ? { url: PIRATE_ICON, scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(12, 38) }
-            : { url: MARKER_ICON, scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(20, 20) },
-          label: pirate ? null : { text: s.id.slice(0, 4).toUpperCase(), color: '#FFFFFF', fontSize: '9px', fontWeight: '700' },
+          icon: { url: fleetIcon(s), scaledSize: new google.maps.Size(40, 40), anchor: new google.maps.Point(12, 38) },
         });
         m.addListener('mouseover', () => {
           hoverInfo.setContent(fleetInfoContent(s.id));
@@ -281,6 +305,7 @@ async function pollFleet() {
         fleetMarkers[id].setMap(null);
         delete fleetMarkers[id];
         delete fleetData[id];
+        delete fleetColorAssignments[id];
       }
     });
 
