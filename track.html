@@ -44,7 +44,9 @@
   .status-bar > * { pointer-events: auto; }
   .logo-mark { width: 32px; height: 32px; background: var(--cold); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
   .logo-text { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-c); }
-  .status-pill { margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent-c); backdrop-filter: blur(8px); }
+  .status-right { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .refresh-label { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted-c); }
+  .status-pill { display: flex; align-items: center; gap: 6px; background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent-c); backdrop-filter: blur(8px); }
   .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted-c); transition: background 0.3s; }
   .status-dot.live { background: var(--green); animation: dotPulse 2s infinite; }
   .status-dot.delivered { background: var(--cold); animation: none; }
@@ -81,9 +83,12 @@
 <div class="status-bar">
   <div class="logo-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.2" y1="6" x2="19.8" y2="18"/><line x1="19.8" y1="6" x2="4.2" y2="18"/><path d="M12 2l-2 2M12 2l2 2M12 22l-2-2M12 22l2-2"/><path d="M4.2 6l2.7-.3M4.2 6l.6 2.7M19.8 6l-2.7-.3M19.8 6l-.6 2.7"/><path d="M4.2 18l2.7.3M4.2 18l.6-2.7M19.8 18l-2.7.3M19.8 18l-.6-2.7"/></svg></div>
   <div class="logo-text">FleetCentre</div>
-  <div class="status-pill">
-    <span class="status-dot" id="statusDot"></span>
-    <span id="statusText">Connecting</span>
+  <div class="status-right">
+    <div class="refresh-label" id="refreshLabel">Refresh in 45s</div>
+    <div class="status-pill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting</span>
+    </div>
   </div>
 </div>
 
@@ -274,7 +279,8 @@ function initMap() {
     document.getElementById('pinInput').focus();
   } else {
     poll();
-    pollTimer = setInterval(poll, 45000);
+    resetRefreshCountdown();
+    pollTimer = setInterval(() => { poll(); resetRefreshCountdown(); }, 45000);
   }
 }
 
@@ -282,8 +288,18 @@ function startFleet() {
   document.getElementById('waitingOverlay').innerHTML = '<div class="overlay-title">Loading fleet…</div><div class="overlay-sub">Fetching active drivers</div>';
   document.getElementById('waitingOverlay').classList.remove('hidden');
   pollFleet();
-  pollTimer = setInterval(pollFleet, 45000);
+  resetRefreshCountdown();
+  pollTimer = setInterval(() => { pollFleet(); resetRefreshCountdown(); }, 45000);
 }
+
+let refreshSecondsLeft = 45;
+function resetRefreshCountdown() { refreshSecondsLeft = 45; }
+setInterval(() => {
+  if (refreshSecondsLeft <= 0) return;
+  refreshSecondsLeft--;
+  const el = document.getElementById('refreshLabel');
+  if (el) el.textContent = `Refresh in ${refreshSecondsLeft}s`;
+}, 1000);
 
 function tryPin() {
   const val = document.getElementById('pinInput').value.trim();
