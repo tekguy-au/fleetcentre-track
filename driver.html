@@ -404,6 +404,11 @@ async function startDelivery() {
   document.getElementById('startBtn').disabled = true;
   document.getElementById('ringLabel').textContent = 'Starting…';
 
+  // Request location synchronously, before any await - Safari/iOS can silently
+  // deny a geolocation request made after a network round-trip because the
+  // user-gesture context from the tap has already expired by then.
+  startGPS();
+
   try {
     const res = await fetch(`${API}/cold-update`, {
       method: 'POST',
@@ -417,7 +422,6 @@ async function startDelivery() {
     document.getElementById('shareBox').classList.add('visible');
 
     setConnected(true);
-    startGPS();
   } catch (e) {
     alert(`Could not start session: ${e.message || 'unknown error'}. Check your connection and try again.`);
     document.getElementById('startBtn').disabled = false;
