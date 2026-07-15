@@ -353,7 +353,12 @@ async function pollFleet() {
       }
     });
 
-    if (sessions.length && markersChanged) map.fitBounds(bounds, 60);
+    if (sessions.length === 1 && markersChanged) {
+      map.setCenter(bounds.getCenter());
+      map.setZoom(14);
+    } else if (sessions.length > 1 && markersChanged) {
+      map.fitBounds(bounds, 60);
+    }
   } catch (e) {}
 }
 
@@ -394,7 +399,7 @@ async function poll() {
         },
       });
       map.panTo(pos);
-      map.setZoom(16);
+      map.setZoom(14);
     } else {
       smoothMove(marker, pos);
       map.panTo(pos);
