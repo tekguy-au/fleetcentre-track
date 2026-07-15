@@ -457,7 +457,7 @@ function startGPS() {
     (err) => {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       watchId = null;
-      document.getElementById('footerMsg').textContent = `GPS error: ${err.message}`;
+      document.getElementById('footerMsg').textContent = `GPS error (code ${err.code}): ${err.message}`;
       document.getElementById('ringLabel').textContent = 'Ready';
       document.getElementById('startBtn').textContent = 'Start delivery';
       document.getElementById('startBtn').disabled = false;
