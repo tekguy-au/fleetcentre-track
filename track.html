@@ -357,6 +357,10 @@ async function pollFleet() {
           hoverInfo.open(map, m);
         });
         m.addListener('mouseout', () => hoverInfo.close());
+        m.addListener('click', () => {
+          hoverInfo.setContent(fleetInfoContent(s.id));
+          hoverInfo.open(map, m);
+        });
         fleetMarkers[s.id] = m;
         markersChanged = true;
       } else {
