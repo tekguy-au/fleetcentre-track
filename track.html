@@ -6,17 +6,17 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>ClearPath Cold · Tracking</title>
+<title>FleetCentre · Track</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --cold: #1B6CA8;
-    --frost: #A8D5EA;
-    --dark: #0D1B2A;
-    --ice: #E8F4F8;
+    --cold: #D4654A;
+    --frost: #F0C4B5;
+    --dark: #1A1A1A;
+    --ice: #FAFAFA;
     --green: #27AE60;
     --text: #F0F4F8;
-    --muted: #8FA8BF;
+    --muted: #9B948C;
 
     --bg: var(--dark);
     --panel-rgb: 13,27,42;
@@ -30,8 +30,8 @@
   body.day {
     --bg: var(--ice);
     --panel-rgb: 232,244,248;
-    --text-c: #0D1B2A;
-    --muted-c: #5B7C93;
+    --text-c: #1A1A1A;
+    --muted-c: #8A8580;
     --accent-c: var(--cold);
     --pill-bg: rgba(13,27,42,0.06);
     --pill-border: rgba(13,27,42,0.12);
@@ -67,6 +67,11 @@
   .overlay-sub { font-size: 13px; color: var(--muted-c); }
   .delivered-icon { font-size: 64px; animation: pop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
   @keyframes pop { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+  .pin-input { width: 140px; text-align: center; font-size: 22px; letter-spacing: 0.3em; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--pill-border); background: var(--pill-bg); color: var(--text-c); outline: none; }
+  .pin-input:focus { border-color: var(--cold); }
+  .pin-submit { padding: 10px 20px; border-radius: 8px; border: none; background: var(--cold); color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .pin-error { font-size: 12px; color: #E74C3C; height: 16px; }
 </style>
 </head>
 <body>
@@ -75,7 +80,7 @@
 
 <div class="status-bar">
   <div class="logo-mark"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.2" y1="6" x2="19.8" y2="18"/><line x1="19.8" y1="6" x2="4.2" y2="18"/><path d="M12 2l-2 2M12 2l2 2M12 22l-2-2M12 22l2-2"/><path d="M4.2 6l2.7-.3M4.2 6l.6 2.7M19.8 6l-2.7-.3M19.8 6l-.6 2.7"/><path d="M4.2 18l2.7.3M4.2 18l.6-2.7M19.8 18l-2.7.3M19.8 18l-.6-2.7"/></svg></div>
-  <div class="logo-text">ClearPath Cold</div>
+  <div class="logo-text">FleetCentre</div>
   <div class="status-pill">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">Connecting</span>
@@ -103,6 +108,14 @@
   <div class="delivered-icon">✅</div>
   <div class="overlay-title" style="font-size:22px;">Delivered</div>
   <div class="overlay-sub">Your delivery is complete</div>
+</div>
+
+<div class="overlay hidden" id="pinOverlay">
+  <div class="overlay-title">Fleet view</div>
+  <div class="overlay-sub">Enter PIN to continue</div>
+  <input class="pin-input" id="pinInput" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+  <button class="pin-submit" id="pinSubmit">Unlock</button>
+  <div class="pin-error" id="pinError"></div>
 </div>
 
 <script>
@@ -143,43 +156,43 @@ function fleetInfoContent(id) {
   const vehicle = VEHICLE_NAMES[hashId(id) % VEHICLE_NAMES.length];
   const driver = s.name || DRIVER_NAMES[hashId(id + 'd') % DRIVER_NAMES.length];
   const speed = s.speed != null ? `${s.speed} km/h` : '—';
-  return `<div style="font-family:-apple-system,sans-serif;font-size:13px;line-height:1.5;color:#0D1B2A;min-width:170px;">
+  return `<div style="font-family:-apple-system,sans-serif;font-size:13px;line-height:1.5;color:#1A1A1A;min-width:170px;">
     <div style="font-weight:700;margin-bottom:2px;">${vehicle}</div>
-    <div style="color:#5B7C93;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Rego ${fakeRego(id)}</div>
+    <div style="color:#8A8580;font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">Rego ${fakeRego(id)}</div>
     <div>Driver: <b>${driver}</b></div>
     <div>Speed: <b>${speed}</b></div>
   </div>`;
 }
 
 const darkStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#0D1B2A' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0D1B2A' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#4A6478' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#172A3A' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1B3A4B' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#1B6CA8' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#0F4C75' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0A1628' }] },
+  { elementType: 'geometry', stylers: [{ color: '#1A1A1A' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#1A1A1A' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#6B6B6B' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2A2A2A' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#333333' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#D4654A' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#A8442F' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#101010' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
 const lightStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#E8F4F8' }] },
+  { elementType: 'geometry', stylers: [{ color: '#FAFAFA' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#FFFFFF' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#5B7C93' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#8A8580' }] },
   { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#FFFFFF' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#D7E9F0' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#1B6CA8' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#A8D5EA' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#A8D5EA' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#E5E5E5' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#D4654A' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#F0C4B5' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#F0C4B5' }] },
   { featureType: 'poi', stylers: [{ visibility: 'off' }] },
   { featureType: 'transit', stylers: [{ visibility: 'off' }] },
 ];
 
 const MARKER_ICON = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-    <circle cx="24" cy="24" r="20" fill="#1B6CA8" stroke="#FFFFFF" stroke-width="3"/>
+    <circle cx="24" cy="24" r="20" fill="#D4654A" stroke="#FFFFFF" stroke-width="3"/>
     <g stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round">
       <line x1="24" y1="14" x2="24" y2="34"/>
       <line x1="15.3" y1="19" x2="32.7" y2="29"/>
@@ -216,7 +229,7 @@ function buildFlagIcon(color) {
   );
 }
 
-const AUTO_FLAG_PALETTE = ['#F1C40F', '#9B59B6', '#1B6CA8', '#FF6B2B', '#16A085', '#E67E22', '#3498DB', '#8E44AD'];
+const AUTO_FLAG_PALETTE = ['#F1C40F', '#9B59B6', '#D4654A', '#FF6B2B', '#16A085', '#E67E22', '#3498DB', '#8E44AD'];
 const fleetColorAssignments = {};
 
 function assignAutoColor(id) {
@@ -253,12 +266,44 @@ function initMap() {
   });
   if (fleetMode) {
     hoverInfo = new google.maps.InfoWindow();
-    pollFleet();
-    pollTimer = setInterval(pollFleet, 45000);
+    if (sessionStorage.getItem('coldFleetAuth') === '1') {
+      startFleet();
+    } else {
+      document.getElementById('waitingOverlay').classList.add('hidden');
+      document.getElementById('pinOverlay').classList.remove('hidden');
+      document.getElementById('pinInput').focus();
+    }
   } else {
     poll();
     pollTimer = setInterval(poll, 45000);
   }
+}
+
+function startFleet() {
+  document.getElementById('waitingOverlay').innerHTML = '<div class="overlay-title">Loading fleet…</div><div class="overlay-sub">Fetching active drivers</div>';
+  document.getElementById('waitingOverlay').classList.remove('hidden');
+  pollFleet();
+  pollTimer = setInterval(pollFleet, 45000);
+}
+
+function tryPin() {
+  const val = document.getElementById('pinInput').value.trim();
+  if (val === '1092') {
+    sessionStorage.setItem('coldFleetAuth', '1');
+    document.getElementById('pinOverlay').classList.add('hidden');
+    startFleet();
+  } else {
+    document.getElementById('pinError').textContent = 'Incorrect PIN';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+if (fleetMode) {
+  document.getElementById('pinSubmit').addEventListener('click', tryPin);
+  document.getElementById('pinInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryPin();
+  });
 }
 
 async function pollFleet() {
