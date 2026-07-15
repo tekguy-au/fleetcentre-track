@@ -331,7 +331,7 @@
     </div>
     <div class="stat-card">
       <div class="stat-val" id="statConn">
-        <span class="conn-dot" id="connDot"></span>—
+        <span class="conn-dot" id="connDot"></span><span id="connLabel">—</span>
       </div>
       <div class="stat-lbl">Connection</div>
     </div>
@@ -486,14 +486,10 @@ function setLiveState() {
 
 function setConnected(ok) {
   const dot = document.getElementById('connDot');
-  const val = document.getElementById('statConn');
-  if (ok) {
-    dot.classList.add('live');
-    val.innerHTML = '<span class="conn-dot live"></span>Live';
-  } else {
-    dot.classList.remove('live');
-    val.innerHTML = '<span class="conn-dot"></span>Off';
-  }
+  const label = document.getElementById('connLabel');
+  if (!dot || !label) return;
+  dot.classList.toggle('live', ok);
+  label.textContent = ok ? 'Live' : 'Off';
 }
 
 let ringTimeout;
