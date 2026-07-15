@@ -425,28 +425,6 @@ async function startDelivery() {
   }
 }
 
-function locationErrorMessage(err) {
-  const ua = navigator.userAgent;
-  const isIOS = /iPhone|iPad|iPod/.test(ua);
-  const isAndroid = /Android/.test(ua);
-
-  if (err.code === err.PERMISSION_DENIED) {
-    if (isIOS) {
-      return "This phone said no to sharing your location. Here's how to fix it:\n\n1. Open the grey Settings app on your Home Screen\n2. Tap the search bar at the top and type: Location Services\n3. Tap Location Services and make sure the switch is ON (green)\n4. Go back to that same search bar and type: Website Data\n5. Tap Website Data, type fleetcentre, tap the result, then Delete\n6. Close this app fully (swipe it away) and open this page again\n7. Tap Start delivery, then tap Allow when it asks to use your location";
-    }
-    if (isAndroid) {
-      return "This phone said no to sharing your location. Here's how to fix it:\n\n1. Swipe down from the top of the screen and make sure Location is turned on there (tap it if it's grey/off)\n2. Now look at the top of your browser next to the web address and tap the little lock icon\n3. Tap Permissions (or Site settings)\n4. Tap Location, then choose Allow\n5. Go back and tap Start delivery again";
-    }
-    return "This phone said no to sharing your location. Make sure Location is turned on for your phone and for this browser, then come back and tap Start delivery again.";
-  }
-
-  if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
-    return "Couldn't find your location. Make sure Location is turned on and you're not indoors or in a tunnel, then tap Start delivery again.";
-  }
-
-  return `Could not get your location: ${err.message}. Check your connection and try again.`;
-}
-
 function startGPS() {
   if (!navigator.geolocation) {
     alert('Geolocation not supported on this device.');
@@ -481,7 +459,6 @@ function startGPS() {
       document.getElementById('startBtn').disabled = false;
       document.getElementById('shareBox').classList.remove('visible');
       setConnected(false);
-      alert(locationErrorMessage(err));
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
