@@ -432,16 +432,16 @@ function locationErrorMessage(err) {
 
   if (err.code === err.PERMISSION_DENIED) {
     if (isIOS) {
-      return 'Location access is blocked for this site.\n\nTo fix on iPhone:\n1. Settings → Safari → Advanced → Website Data\n2. Search "fleetcentre" and delete all entries\n3. Fully close Safari (swipe it away) and reopen this page\n4. Tap Start delivery again and choose Allow when asked';
+      return "This phone said no to sharing your location. Here's how to fix it:\n\n1. Close this app fully — swipe it away, don't just switch screens\n2. Open the grey Settings app on your Home Screen\n3. Scroll down and tap Safari\n4. Tap Advanced (near the bottom)\n5. Tap Website Data\n6. Type fleetcentre and tap the result, then Delete\n7. Open this page again\n8. Tap Start delivery\n9. When it asks to use your location, tap Allow";
     }
     if (isAndroid) {
-      return 'Location access is blocked for this site.\n\nTo fix on Android:\n1. Tap the lock/info icon next to the address bar\n2. Tap Permissions → Location → Allow\n3. Reload this page and tap Start delivery again';
+      return "This phone said no to sharing your location. Here's how to fix it:\n\n1. Look at the top of the screen next to the web address\n2. Tap the little lock icon\n3. Tap Permissions\n4. Tap Location, then choose Allow\n5. Go back and tap Start delivery again";
     }
-    return 'Location access is blocked for this site. Check your browser\'s site settings, allow Location, then reload and try again.';
+    return "This phone said no to sharing your location. Find your browser's site settings, turn Location back on, then come back and tap Start delivery again.";
   }
 
   if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
-    return 'Could not get a GPS fix. Make sure Location Services is turned on for this browser and you have a clear view of the sky, then try again.';
+    return "Couldn't find your location. Make sure Location is turned on and you're not indoors or in a tunnel, then tap Start delivery again.";
   }
 
   return `Could not get your location: ${err.message}. Check your connection and try again.`;
