@@ -419,7 +419,7 @@ async function startDelivery() {
     setConnected(true);
     startGPS();
   } catch (e) {
-    alert('Could not start session.');
+    alert(`Could not start session: ${e.message || 'unknown error'}. Check your connection and try again.`);
     document.getElementById('startBtn').disabled = false;
     document.getElementById('ringLabel').textContent = 'Ready';
   }
