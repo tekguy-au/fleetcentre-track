@@ -425,6 +425,28 @@ async function startDelivery() {
   }
 }
 
+function locationErrorMessage(err) {
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+
+  if (err.code === err.PERMISSION_DENIED) {
+    if (isIOS) {
+      return 'Location access is blocked for this site.\n\nTo fix on iPhone:\n1. Settings → Safari → Advanced → Website Data\n2. Search "fleetcentre" and delete all entries\n3. Fully close Safari (swipe it away) and reopen this page\n4. Tap Start delivery again and choose Allow when asked';
+    }
+    if (isAndroid) {
+      return 'Location access is blocked for this site.\n\nTo fix on Android:\n1. Tap the lock/info icon next to the address bar\n2. Tap Permissions → Location → Allow\n3. Reload this page and tap Start delivery again';
+    }
+    return 'Location access is blocked for this site. Check your browser\'s site settings, allow Location, then reload and try again.';
+  }
+
+  if (err.code === err.TIMEOUT || err.code === err.POSITION_UNAVAILABLE) {
+    return 'Could not get a GPS fix. Make sure Location Services is turned on for this browser and you have a clear view of the sky, then try again.';
+  }
+
+  return `Could not get your location: ${err.message}. Check your connection and try again.`;
+}
+
 function startGPS() {
   if (!navigator.geolocation) {
     alert('Geolocation not supported on this device.');
@@ -459,7 +481,7 @@ function startGPS() {
       document.getElementById('startBtn').disabled = false;
       document.getElementById('shareBox').classList.remove('visible');
       setConnected(false);
-      alert(`Could not get your location: ${err.message}. Check that location access is allowed for this site, then try again.`);
+      alert(locationErrorMessage(err));
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
