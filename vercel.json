@@ -4,6 +4,12 @@
     { "source": "/track", "destination": "/track.html" }
   ],
   "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "driver.fleetcentre.com.au" }],
+      "destination": "/driver",
+      "permanent": false
+    },
     { "source": "/", "destination": "/track", "permanent": false }
   ]
 }
